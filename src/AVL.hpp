@@ -4,12 +4,12 @@
 
 class AVLIndex : public BSTIndex {
 private:
-    int getHeight(TreeNode* node);
-    int getBalance(TreeNode* node);
+    int getHeight(TreeNode* n);
+    int getBalance(TreeNode* n);
 
-    TreeNode* rotateRight(TreeNode* y);
-    TreeNode* rotateLeft(TreeNode* x);
-    TreeNode* insert(TreeNode* node, int idx, const string& key) override;
+    TreeNode* rotateRight(TreeNode* parent);
+    TreeNode* rotateLeft(TreeNode* parent);
+    TreeNode* insert(TreeNode* current, int dataIdx, const string& searchKey) override;
 
 public:
     void Add(const int i, const string &Key) override;

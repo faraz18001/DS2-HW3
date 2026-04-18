@@ -1,13 +1,11 @@
 #include "FileExplorer.hpp"
 #include <fstream>
 
-
-
-FileExplorer::FileExplorer(const string &type, const string &csv_file) {
+FileExplorer::FileExplorer(const string &t, const string &f) {
     fs = new FileSystem();
-    fs->LoadFilesFromCsv(csv_file);
+    fs->LoadFilesFromCsv(f);
     
-    if (type == "BST") {
+    if (t == "BST") {
         NameIndex = new BSTIndex();
         DateIndex = new BSTIndex();
     } else {
@@ -25,55 +23,69 @@ FileExplorer::~FileExplorer() {
     delete fs;
 }
 
-void writeEntries(const vector<int>& indices, int visited, const vector<FileSystemEntry>& data, const string& output_path) {
-    ofstream out(output_path);
-    out << "Number of nodes traversed: " << visited << "\n";
-    for (int idx : indices) {
-        string p = data[idx].path;
-        if (!p.empty() && p[0] == '/') {
-            p = p.substr(1);
-        }
-        out << p << "\n";
-    }
-}
-
-void FileExplorer::FindByName(const string &filename, const string &output_path) {
-    pair<vector<int>, int> res = NameIndex->Search(filename);
-    writeEntries(res.first, res.second, fs->entries, output_path);
-}
-
-void FileExplorer::FindByDate(const string &date, const string &output_path) {
-    pair<vector<int>, int> res = DateIndex->Search(date);
-    writeEntries(res.first, res.second, fs->entries, output_path);
-}
-
-void FileExplorer::FindByNameAndDate(const string &filename, const string &date, const string &output_path) {
-    pair<vector<int>, int> nameRes = NameIndex->Search(filename);
-    pair<vector<int>, int> dateRes = DateIndex->Search(date);
+void dumpToFilesystem(const vector<int>& list, int numVisited, const vector<FileSystemEntry>& info, const string& pathOut) {
+    ofstream writer(pathOut);
+    writer << "Number of nodes traversed: " << numVisited << "\n";
     
-    vector<int> overlap;
-    for (int nIdx : nameRes.first) {
-        for (int dIdx : dateRes.first) {
-            if (nIdx == dIdx) {
-                overlap.push_back(nIdx);
-                break;
-            }
+    int sz = (int)list.size();
+    for (int i = 0; i < sz; i++) {
+        int pos = list[i];
+        string entryPath = info[pos].path;
+        if (entryPath.length() > 0 && entryPath[0] == '/') {
+            entryPath = entryPath.substr(1);
+        }
+        writer << entryPath << "\n";
+    }
+}
+
+void FileExplorer::FindByName(const string &name, const string &out) {
+    pair<vector<int>, int> results = NameIndex->Search(name);
+    dumpToFilesystem(results.first, results.second, fs->entries, out);
+}
+
+void FileExplorer::FindByDate(const string &day, const string &out) {
+    pair<vector<int>, int> results = DateIndex->Search(day);
+    dumpToFilesystem(results.first, results.second, fs->entries, out);
+}
+
+void FileExplorer::FindByNameAndDate(const string &name, const string &day, const string &out) {
+    pair<vector<int>, int> r1 = NameIndex->Search(name);
+    pair<vector<int>, int> r2 = DateIndex->Search(day);
+    
+    vector<int> both;
+    int i = 0, j = 0;
+    int size1 = (int)r1.first.size();
+    int size2 = (int)r2.first.size();
+
+    while (i < size1 && j < size2) {
+        int valA = r1.first[i];
+        int valB = r2.first[j];
+        if (valA == valB) {
+            both.push_back(valA);
+            i++; j++;
+        } else if (valA < valB) {
+            i++;
+        } else {
+            j++;
         }
     }
 
-    writeEntries(overlap, nameRes.second + dateRes.second, fs->entries, output_path);
+    dumpToFilesystem(both, r1.second + r2.second, fs->entries, out);
 }
 
-void FileExplorer::FindByNameAndSize(const string &filename, const int size, const string &output_path) {
-    pair<vector<int>, int> nameRes = NameIndex->Search(filename);
-    vector<int> filtered;
-    for (int idx : nameRes.first) {
-        if (fs->entries[idx].Size == size) filtered.push_back(idx);
+void FileExplorer::FindByNameAndSize(const string &name, const int bytes, const string &out) {
+    pair<vector<int>, int> results = NameIndex->Search(name);
+    vector<int> refined;
+    for (int i = 0; i < (int)results.first.size(); i++) {
+        int idx = results.first[i];
+        if (fs->entries[idx].Size == bytes) {
+            refined.push_back(idx);
+        }
     }
-    writeEntries(filtered, nameRes.second, fs->entries, output_path);
+    dumpToFilesystem(refined, results.second, fs->entries, out);
 }
 
-void FileExplorer::FindFilesCreatedDuring(const string &date1, const string &date2, const string &output_path) {
-    pair<vector<int>, int> res = DateIndex->RangeSearch(date1, date2);
-    writeEntries(res.first, res.second, fs->entries, output_path);
+void FileExplorer::FindFilesCreatedDuring(const string &dStart, const string &dEnd, const string &out) {
+    pair<vector<int>, int> output = DateIndex->RangeSearch(dStart, dEnd);
+    dumpToFilesystem(output.first, output.second, fs->entries, out);
 }

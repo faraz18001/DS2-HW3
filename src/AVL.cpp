@@ -1,74 +1,87 @@
 #include "AVL.hpp"
 
-int getMax(int a, int b) {
-    if (a > b) {
-        return a;
-    } else {
-        return b;
+int getHigherVal(int v1, int v2) {
+    if (v1 > v2) {
+        return v1;
     }
+    return v2;
 }
 
-
-int AVLIndex::getHeight(TreeNode* node) {
-    if (node != nullptr) {
-        return node->height;
-    } else {
+int AVLIndex::getHeight(TreeNode* n) {
+    if (n == nullptr) {
         return 0;
     }
+    return n->height;
 }
 
-int AVLIndex::getBalance(TreeNode* node) {
-    if (node != nullptr) {
-        return getHeight(node->left) - getHeight(node->right);
-    } else {
+int AVLIndex::getBalance(TreeNode* n) {
+    if (n == nullptr) {
         return 0;
     }
+    return getHeight(n->left) - getHeight(n->right);
 }
 
-TreeNode* AVLIndex::rotateRight(TreeNode* y) {
-    TreeNode* x = y->left;
-    TreeNode* T2 = x->right;
-    x->right = y;
-    y->left = T2;
-    y->height = getMax(getHeight(y->left), getHeight(y->right)) + 1;
-    x->height = getMax(getHeight(x->left), getHeight(x->right)) + 1;
-    return x;
+TreeNode* AVLIndex::rotateRight(TreeNode* top) {
+    TreeNode* pivot = top->left;
+    TreeNode* orphan = pivot->right;
+
+    pivot->right = top;
+    top->left = orphan;
+
+    top->height = getHigherVal(getHeight(top->left), getHeight(top->right)) + 1;
+    pivot->height = getHigherVal(getHeight(pivot->left), getHeight(pivot->right)) + 1;
+
+    return pivot;
 }
 
-TreeNode* AVLIndex::rotateLeft(TreeNode* x) {
-    TreeNode* y = x->right;
-    TreeNode* T2 = y->left;
-    y->left = x;
-    x->right = T2;
-    x->height = getMax(getHeight(x->left), getHeight(x->right)) + 1;
-    y->height = getMax(getHeight(y->left), getHeight(y->right)) + 1;
-    return y;
+TreeNode* AVLIndex::rotateLeft(TreeNode* top) {
+    TreeNode* pivot = top->right;
+    TreeNode* orphan = pivot->left;
+
+    pivot->left = top;
+    top->right = orphan;
+
+    top->height = getHigherVal(getHeight(top->left), getHeight(top->right)) + 1;
+    pivot->height = getHigherVal(getHeight(pivot->left), getHeight(pivot->right)) + 1;
+
+    return pivot;
 }
 
-TreeNode* AVLIndex::insert(TreeNode* node, int idx, const string& key) {
-    if (!node) return new TreeNode(key, idx);
+TreeNode* AVLIndex::insert(TreeNode* node, int index, const string& keyVal) {
+    if (node == nullptr) {
+        return new TreeNode(keyVal, index);
+    }
 
-    if (key == node->key) {
-        node->indices.push_back(idx);
+    if (keyVal == node->key) {
+        node->indices.push_back(index);
         return node;
-    } else if (key < node->key) {
-        node->left = insert(node->left, idx, key);
+    } 
+    
+    if (keyVal < node->key) {
+        node->left = insert(node->left, index, keyVal);
     } else {
-        node->right = insert(node->right, idx, key);
+        node->right = insert(node->right, index, keyVal);
     }
 
-    node->height = 1 + getMax(getHeight(node->left), getHeight(node->right));
-    int balance = getBalance(node);
+    node->height = 1 + getHigherVal(getHeight(node->left), getHeight(node->right));
+    int diff = getBalance(node);
 
-    if (balance > 1 && key < node->left->key) return rotateRight(node);
-    if (balance < -1 && key > node->right->key) return rotateLeft(node);
-    if (balance > 1 && key > node->left->key) {
-        node->left = rotateLeft(node->left);
-        return rotateRight(node);
+    if (diff > 1) {
+        if (keyVal < node->left->key) {
+            return rotateRight(node);
+        } else {
+            node->left = rotateLeft(node->left);
+            return rotateRight(node);
+        }
     }
-    if (balance < -1 && key < node->right->key) {
-        node->right = rotateRight(node->right);
-        return rotateLeft(node);
+
+    if (diff < -1) {
+        if (keyVal > node->right->key) {
+            return rotateLeft(node);
+        } else {
+            node->right = rotateRight(node->right);
+            return rotateLeft(node);
+        }
     }
 
     return node;

@@ -22,10 +22,10 @@ class BSTIndex {
 protected:
     TreeNode *root;
 
-    virtual TreeNode* insert(TreeNode* node, int idx, const string& key);
-    TreeNode* search(TreeNode* node, const string& key, int& visited) const;
-    void clear(TreeNode* node);
-    void rangeSearch(TreeNode* node, const string& k1, const string& k2, vector<int>& results, int& visited) const;
+    virtual TreeNode* insert(TreeNode* current, int dataIdx, const string& searchKey);
+    TreeNode* search(TreeNode* n, const string& k, int& count) const;
+    void clear(TreeNode* n);
+    void rangeSearch(TreeNode* n, const string& low, const string& high, vector<int>& out, int& count) const;
 
 public:
     BSTIndex() : root(nullptr) {}

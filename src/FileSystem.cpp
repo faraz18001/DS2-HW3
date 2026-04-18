@@ -7,72 +7,82 @@
 
 using namespace std;
 
-
-int stringToInt(string s) {
-    int res = 0;
-    for (int i = 0; i < (int)s.length(); i++) {
-        if (s[i] >= '0' && s[i] <= '9') {
-            res = res * 10 + (s[i] - '0');
+int convertToNum(string str) {
+    int val = 0;
+    int len = (int)str.length();
+    for (int idx = 0; idx < len; idx++) {
+        char ch = str[idx];
+        if (ch >= '0' && ch <= '9') {
+            val = val * 10 + (ch - '0');
         }
     }
-    return res;
+    return val;
 }
 
-void FileSystem::LoadFilesFromCsv(const string &csv_file) {
-    ifstream file(csv_file);
-    string line;
+void FileSystem::LoadFilesFromCsv(const string &loc) {
+    ifstream stream(loc);
+    string lineText;
 
-    getline(file, line);
-    while (getline(file, line)) {
-        if (line.empty()) continue;
-        FileSystemEntry entry;
-        
-        string tokens[6];
-        int t = 0;
-        string currentToken = "";
-        for (int i = 0; i < (int)line.length(); i++) {
-            if (line[i] == ',' && t < 5) {
-                tokens[t] = currentToken;
-                currentToken = "";
-                t++;
-            } else {
-                currentToken += line[i];
-            }
-        }
-        tokens[t] = currentToken;
-
-        if (t < 5) continue;
-
-        entry.Filename = tokens[0];
-        entry.Type = tokens[1];
-        entry.Size = stringToInt(tokens[2]);
-        entry.accessedOn = ParseTimestamp(tokens[3]);
-        entry.modifiedOn = ParseTimestamp(tokens[4]);
-        entry.path = tokens[5];
-        
-        entries.push_back(entry);
+    if (getline(stream, lineText)) {
+        // heading line
     }
 
-    file.close();
+    while (getline(stream, lineText)) {
+        if (lineText.length() == 0) continue;
+        
+        FileSystemEntry item;
+        string dataParts[6];
+        int cursor = 0;
+        int textLen = (int)lineText.length();
+        
+        int columnCount = 0;
+        while (columnCount < 5 && cursor < textLen) {
+            string segment = "";
+            while (cursor < textLen && lineText[cursor] != ',') {
+                segment += lineText[cursor++];
+            }
+            dataParts[columnCount++] = segment;
+            cursor++; // Move past comma
+        }
+        
+        if (cursor < textLen) {
+            dataParts[5] = lineText.substr(cursor);
+        }
+
+        if (columnCount >= 5) {
+            item.Filename = dataParts[0];
+            item.Type = dataParts[1];
+            item.Size = convertToNum(dataParts[2]);
+            item.accessedOn = ParseTimestamp(dataParts[3]);
+            item.modifiedOn = ParseTimestamp(dataParts[4]);
+            item.path = dataParts[5];
+            entries.push_back(item);
+        }
+    }
+    stream.close();
 }
 
 void FileSystem::PrintFileEntry() {
-    for (int i = 0; i < (int)entries.size(); i++) {
-        const FileSystemEntry &entry = entries[i];
-        cout << "Filename: " << entry.Filename << "\n";
-        cout << "Type: " << entry.Type << "\n";
-        cout << "Size:" << entry.Size << "\n";
-        cout << "accessedOn: " << entry.accessedOn << "\n";
-        cout << "modifiedOn: " << entry.modifiedOn << "\n";
-        cout << "path: " << entry.path << "\n";
+    int total = (int)entries.size();
+    for (int k = 0; k < total; k++) {
+        FileSystemEntry& target = entries[k];
+        cout << "Filename: " << target.Filename << "\n";
+        cout << "Type: " << target.Type << "\n";
+        cout << "Size:" << target.Size << "\n";
+        cout << "accessedOn: " << target.accessedOn << "\n";
+        cout << "modifiedOn: " << target.modifiedOn << "\n";
+        cout << "path: " << target.path << "\n";
         cout << "\n";
     }
 }
 
-string FileSystem::ParseTimestamp(const string &timestampStr) {
-    if ((int)timestampStr.length() >= 10) {
-        return timestampStr.substr(0, 10);
+string FileSystem::ParseTimestamp(const string &raw) {
+    if (raw.length() < 10) return "";
+    char buf[11];
+    for (int m = 0; m < 10; m++) {
+        buf[m] = raw[m];
     }
-    return "";
-
+    buf[10] = '\0';
+    string result = buf;
+    return result;
 }
