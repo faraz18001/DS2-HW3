@@ -1,13 +1,11 @@
 #include "BST.hpp"
 
 void BSTIndex::CreateIndex(vector<FileSystemEntry> &Data, const string &IndexType) {
-    int total = (int)Data.size();
-    for (int idx = 0; idx < total; idx++) {
-        if (IndexType == "Filename") {
-            Add(idx, Data[idx].Filename);
-        } else if (IndexType == "modifiedOn") {
-            Add(idx, Data[idx].modifiedOn);
-        }
+    int idx = 0;
+    for (auto it = Data.begin(); it != Data.end(); ++it) {
+        string val = (IndexType == "Filename") ? it->Filename : it->modifiedOn;
+        Add(idx, val);
+        idx++;
     }
 }
 
@@ -16,43 +14,38 @@ void BSTIndex::Add(const int i, const string &Key) {
 }
 
 TreeNode* BSTIndex::insert(TreeNode* curr, int fileIdx, const string& val) {
-    if (curr == nullptr) {
-        return new TreeNode(val, fileIdx);
-    }
+    if (!curr) return new TreeNode(val, fileIdx);
 
-    if (val < curr->key) {
-        curr->left = insert(curr->left, fileIdx, val);
-    } else if (val > curr->key) {
-        curr->right = insert(curr->right, fileIdx, val);
-    } else {
+    if (curr->key == val) {
         curr->indices.push_back(fileIdx);
+    } else {
+        if (val < curr->key) {
+            curr->left = insert(curr->left, fileIdx, val);
+        } else {
+            curr->right = insert(curr->right, fileIdx, val);
+        }
     }
     return curr;
 }
 
 pair<vector<int>, int> BSTIndex::Search(const string &Key) {
-    int totalVisited = 0;
-    TreeNode* found = search(root, Key, totalVisited);
-    if (found != nullptr) {
-        return {found->indices, totalVisited};
+    int visits = 0;
+    TreeNode* match = search(root, Key, visits);
+    vector<int> res;
+    if (match) {
+        res = match->indices;
     }
-    vector<int> empty;
-    return {empty, totalVisited};
+    return make_pair(res, visits);
 }
 
 TreeNode* BSTIndex::search(TreeNode* n, const string& k, int& count) const {
-    if (n == nullptr) return nullptr;
+    if (!n) return nullptr;
     
-    count = count + 1;
-    if (k == n->key) {
-        return n;
-    }
+    count++;
+    if (n->key == k) return n;
     
-    if (k < n->key) {
-        return search(n->left, k, count);
-    } else {
-        return search(n->right, k, count);
-    }
+    bool searchLeft = (k < n->key);
+    return searchLeft ? search(n->left, k, count) : search(n->right, k, count);
 }
 
 void BSTIndex::clear(TreeNode* n) {
@@ -70,25 +63,23 @@ pair<vector<int>, int> BSTIndex::RangeSearch(const string& a, const string& b) {
 }
 
 void BSTIndex::rangeSearch(TreeNode* anchor, const string& minVal, const string& maxVal, vector<int>& list, int& counter) const {
-    if (anchor == nullptr) return;
+    if (!anchor) return;
     
     counter++;
+    bool checkLeft = (anchor->key > minVal);
+    bool checkRight = (anchor->key < maxVal);
     
-    // go left if there's possibly smaller values in range
-    if (!(anchor->key <= minVal)) {
+    if (checkLeft) {
         rangeSearch(anchor->left, minVal, maxVal, list, counter);
     }
     
-    // check current
     if (anchor->key >= minVal && anchor->key <= maxVal) {
-        int count = (int)anchor->indices.size();
-        for (int k = 0; k < count; k++) {
-            list.push_back(anchor->indices[k]);
+        for (int item : anchor->indices) {
+            list.push_back(item);
         }
     }
     
-    // go right if there's possibly larger values in range
-    if (!(anchor->key >= maxVal)) {
+    if (checkRight) {
         rangeSearch(anchor->right, minVal, maxVal, list, counter);
     }
 }

@@ -8,80 +8,88 @@ int getHigherVal(int v1, int v2) {
 }
 
 int AVLIndex::getHeight(TreeNode* n) {
-    if (n == nullptr) {
-        return 0;
-    }
-    return n->height;
+    return n != nullptr ? n->height : 0;
 }
 
 int AVLIndex::getBalance(TreeNode* n) {
-    if (n == nullptr) {
-        return 0;
-    }
-    return getHeight(n->left) - getHeight(n->right);
+    if (!n) return 0;
+    int leftH = getHeight(n->left);
+    int rightH = getHeight(n->right);
+    return leftH - rightH;
 }
 
 TreeNode* AVLIndex::rotateRight(TreeNode* top) {
     TreeNode* pivot = top->left;
-    TreeNode* orphan = pivot->right;
-
+    top->left = pivot->right;
     pivot->right = top;
-    top->left = orphan;
 
-    top->height = getHigherVal(getHeight(top->left), getHeight(top->right)) + 1;
-    pivot->height = getHigherVal(getHeight(pivot->left), getHeight(pivot->right)) + 1;
+    int lh = getHeight(top->left);
+    int rh = getHeight(top->right);
+    top->height = (lh > rh ? lh : rh) + 1;
+
+    int plh = getHeight(pivot->left);
+    int prh = getHeight(pivot->right);
+    pivot->height = (plh > prh ? plh : prh) + 1;
 
     return pivot;
 }
 
 TreeNode* AVLIndex::rotateLeft(TreeNode* top) {
     TreeNode* pivot = top->right;
-    TreeNode* orphan = pivot->left;
-
+    top->right = pivot->left;
     pivot->left = top;
-    top->right = orphan;
 
-    top->height = getHigherVal(getHeight(top->left), getHeight(top->right)) + 1;
-    pivot->height = getHigherVal(getHeight(pivot->left), getHeight(pivot->right)) + 1;
+    int lh = getHeight(top->left);
+    int rh = getHeight(top->right);
+    top->height = (lh > rh ? lh : rh) + 1;
+
+    int plh = getHeight(pivot->left);
+    int prh = getHeight(pivot->right);
+    pivot->height = (plh > prh ? plh : prh) + 1;
 
     return pivot;
 }
 
+
 TreeNode* AVLIndex::insert(TreeNode* node, int index, const string& keyVal) {
-    if (node == nullptr) {
-        return new TreeNode(keyVal, index);
+    if (!node) {
+        TreeNode* fresh = new TreeNode(keyVal, index);
+        return fresh;
     }
 
-    if (keyVal == node->key) {
+    bool isLess = keyVal < node->key;
+    bool isGreater = keyVal > node->key;
+
+    if (isLess) {
+        node->left = insert(node->left, index, keyVal);
+    } else if (isGreater) {
+        node->right = insert(node->right, index, keyVal);
+    } else {
         node->indices.push_back(index);
         return node;
-    } 
+    }
+
+    int hl = getHeight(node->left);
+    int hr = getHeight(node->right);
+    node->height = 1 + (hl > hr ? hl : hr);
     
-    if (keyVal < node->key) {
-        node->left = insert(node->left, index, keyVal);
-    } else {
-        node->right = insert(node->right, index, keyVal);
-    }
+    int balanceFactor = getBalance(node);
 
-    node->height = 1 + getHigherVal(getHeight(node->left), getHeight(node->right));
-    int diff = getBalance(node);
+    bool leftHeavy = balanceFactor > 1;
+    bool rightHeavy = balanceFactor < -1;
 
-    if (diff > 1) {
-        if (keyVal < node->left->key) {
-            return rotateRight(node);
-        } else {
+    if (leftHeavy) {
+        if (keyVal >= node->left->key) {
             node->left = rotateLeft(node->left);
-            return rotateRight(node);
         }
+        return rotateRight(node);
     }
 
-    if (diff < -1) {
-        if (keyVal > node->right->key) {
-            return rotateLeft(node);
-        } else {
+    if (rightHeavy) {
+        if (keyVal <= node->right->key) {
             node->right = rotateRight(node->right);
-            return rotateLeft(node);
         }
+        return rotateLeft(node);
     }
 
     return node;
